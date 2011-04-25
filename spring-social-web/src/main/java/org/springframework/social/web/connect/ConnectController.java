@@ -137,11 +137,17 @@ public class ConnectController  {
 	 */
 	@RequestMapping(value="{providerId}", method=RequestMethod.GET, params="oauth_token")
 	public String oauth1Callback(@PathVariable String providerId, @RequestParam("oauth_token") String token, @RequestParam(value="oauth_verifier", required=false) String verifier, WebRequest request) {
-		OAuth1ServiceProviderConnectionFactory<?> connectionFactory = (OAuth1ServiceProviderConnectionFactory<?>) connectionFactoryLocator.getConnectionFactory(providerId);
-		OAuthToken accessToken = connectionFactory.getOAuthOperations().exchangeForAccessToken(new AuthorizedRequestToken(extractCachedRequestToken(request), verifier), null);
-		ServiceProviderConnection<?> connection = connectionFactory.createConnection(accessToken);
-		connectionRepository.addConnection(connection);	
-		postConnect(connectionFactory, connection, request);
+		ServiceProviderConnectionFactory<?> cF = connectionFactoryLocator.getConnectionFactory(providerId);
+		if (cF instanceof OAuth1ServiceProviderConnectionFactory) {
+			OAuth1ServiceProviderConnectionFactory<?> connectionFactory = (OAuth1ServiceProviderConnectionFactory<?>) connectionFactoryLocator.getConnectionFactory(providerId);
+			OAuthToken accessToken = connectionFactory.getOAuthOperations().exchangeForAccessToken(new AuthorizedRequestToken(extractCachedRequestToken(request), verifier), null);
+			ServiceProviderConnection<?> connection = connectionFactory.createConnection(accessToken);
+			connectionRepository.addConnection(connection);	
+			postConnect(connectionFactory, connection, request);
+		}
+		else {
+			oatuhCallback(providerId,token,request);
+		}
 		return redirectToProviderConnect(providerId);
 	}
 
@@ -152,12 +158,38 @@ public class ConnectController  {
 	 */
 	@RequestMapping(value="{providerId}", method=RequestMethod.GET, params="code")
 	public String oauth2Callback(@PathVariable String providerId, @RequestParam("code") String code, WebRequest request) {
+		oatuhCallback(providerId,code,request);
+		return redirectToProviderConnect(providerId);
+	}
+	
+	/**
+	 * Process the authorization callback from an OAuth 2 service provider.
+	 * Called after the member authorizes the connection, generally done by having he or she click "Allow" in their web browser at the provider's site.
+	 * On authorization verification, connects the member's local account to the account they hold at the service provider.
+	 */
+	@RequestMapping(value="{providerId}", method=RequestMethod.GET, params="openid.ext2.request_token")
+	public String googleCallback(@PathVariable String providerId, @RequestParam("openid.ext2.request_token") String code, WebRequest request) {
+		oatuhCallback(providerId,code,request);
+		return redirectToProviderConnect(providerId);
+	}
+	
+	/**
+	 * Process the authorization callback from an OAuth 2 service provider.
+	 * Called after the member authorizes the connection, generally done by having he or she click "Allow" in their web browser at the provider's site.
+	 * On authorization verification, connects the member's local account to the account they hold at the service provider.
+	 */
+	@RequestMapping(value="{providerId}", method=RequestMethod.GET, params="wrap_verification_code")
+	public String hotmailCallback(@PathVariable String providerId, @RequestParam("wrap_verification_code") String code, WebRequest request) {
+		oatuhCallback(providerId,code,request);
+		return redirectToProviderConnect(providerId);
+	}
+	
+	private void oatuhCallback(String providerId,String code,WebRequest request){
 		OAuth2ServiceProviderConnectionFactory<?> connectionFactory = (OAuth2ServiceProviderConnectionFactory<?>) connectionFactoryLocator.getConnectionFactory(providerId);
 		AccessGrant accessGrant = connectionFactory.getOAuthOperations().exchangeForAccess(code, callbackUrl(providerId), null);
 		ServiceProviderConnection<?> connection = connectionFactory.createConnection(accessGrant);
 		connectionRepository.addConnection(connection);
 		postConnect(connectionFactory, connection, request);
-		return redirectToProviderConnect(providerId);
 	}
 
 	/**
