@@ -146,7 +146,7 @@ public class ConnectController  {
 			postConnect(connectionFactory, connection, request);
 		}
 		else {
-			oatuhCallback(providerId,token,request);
+			oauthCallback(providerId,token,request);
 		}
 		return redirectToProviderConnect(providerId);
 	}
@@ -158,7 +158,7 @@ public class ConnectController  {
 	 */
 	@RequestMapping(value="{providerId}", method=RequestMethod.GET, params="code")
 	public String oauth2Callback(@PathVariable String providerId, @RequestParam("code") String code, WebRequest request) {
-		oatuhCallback(providerId,code,request);
+		oauthCallback(providerId,code,request);
 		return redirectToProviderConnect(providerId);
 	}
 	
@@ -169,7 +169,7 @@ public class ConnectController  {
 	 */
 	@RequestMapping(value="{providerId}", method=RequestMethod.GET, params="openid.ext2.request_token")
 	public String googleCallback(@PathVariable String providerId, @RequestParam("openid.ext2.request_token") String code, WebRequest request) {
-		oatuhCallback(providerId,code,request);
+		oauthCallback(providerId,code,request);
 		return redirectToProviderConnect(providerId);
 	}
 	
@@ -180,11 +180,11 @@ public class ConnectController  {
 	 */
 	@RequestMapping(value="{providerId}", method=RequestMethod.GET, params="wrap_verification_code")
 	public String hotmailCallback(@PathVariable String providerId, @RequestParam("wrap_verification_code") String code, WebRequest request) {
-		oatuhCallback(providerId,code,request);
+		oauthCallback(providerId,code,request);
 		return redirectToProviderConnect(providerId);
 	}
 	
-	private void oatuhCallback(String providerId,String code,WebRequest request){
+	private void oauthCallback(String providerId,String code,WebRequest request){
 		OAuth2ServiceProviderConnectionFactory<?> connectionFactory = (OAuth2ServiceProviderConnectionFactory<?>) connectionFactoryLocator.getConnectionFactory(providerId);
 		AccessGrant accessGrant = connectionFactory.getOAuthOperations().exchangeForAccess(code, callbackUrl(providerId), null);
 		ServiceProviderConnection<?> connection = connectionFactory.createConnection(accessGrant);
